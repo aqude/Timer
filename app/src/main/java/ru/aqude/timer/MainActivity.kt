@@ -18,6 +18,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.DefaultTintColor
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -47,53 +48,66 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TimerMain() {
     var valueSlider by remember {
-        mutableStateOf(0.0f)
+        mutableStateOf(0f)
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround, modifier = Modifier.fillMaxSize()) {
-        TimerData(valueSlider)
-        InputData(onSliderValueChanged = {value ->
+        val seconds = when (valueSlider.toInt()) {
+            0 -> 15
+            1 -> 30
+            2 -> 60
+            3 -> 600
+            4 -> 900
+            5 -> 1800
+            else -> 10
+        }
+        TimerData(seconds)
+        InputData(onSliderValueChanged = { value ->
             valueSlider = value
         })
     }
 }
 
 @Composable
-fun TimerData(sliderValue: Float) {
+fun TimerData(sliderValue: Int) {
+    var countdown by remember { mutableStateOf(sliderValue) }
+    var isRunning by remember { mutableStateOf(false) }
 
-    val seconds = when (sliderValue.toInt()) {
-        0 -> 15
-        1 -> 30
-        2 -> 60
-        3 -> 600
-        4 -> 900
-        5 -> 1800
-        else -> 1
-    }
-
-    val timeOnTimer by remember {
-        mutableStateOf(seconds)
-    }
-    var timeCopy by remember {
-        mutableStateOf(timeOnTimer)
-    }
-    Column() {
-        Text(text = timeCopy.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 40.sp)
-        
-        Button(onClick = {
-            CoroutineScope(Dispatchers.Main).launch {
-                while (timeCopy != 0) {
-                    delay(1000)
-                    timeCopy--
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = CenterHorizontally) {
+        Text(text = countdown.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = if (isRunning) 100.sp else 50.sp)
+1
+        Button(modifier = Modifier
+            .height(100.dp)
+            .width(200.dp)
+            .padding(20.dp), colors = ButtonDefaults.buttonColors(if (isRunning) Color.Gray else Color.Green), onClick = {
+            if (!isRunning) {
+                isRunning = true
+                CoroutineScope(Dispatchers.Main).launch {
+                    while (countdown != 0) {
+                        delay(1000)
+                        countdown--
+                    }
+                    isRunning = false
                 }
-                    timeCopy = timeOnTimer
             }
         }
         ) {
-            
+            Text(text = "Старт", fontSize = 20.sp, color = Color.White)
+        }
+
+        if (!isRunning) {
+            Button(modifier = Modifier
+                .height(100.dp)
+                .width(200.dp)
+                .padding(20.dp), colors = ButtonDefaults.buttonColors(Color.Red), onClick = {
+                countdown = sliderValue
+            }
+            ) {
+                Text(text = "Сброс", fontSize = 20.sp, color = Color.White)
+            }
         }
     }
-    
 }
+
 
 @Composable
 fun InputData(onSliderValueChanged: (Float) -> Unit) {
@@ -107,12 +121,13 @@ fun InputData(onSliderValueChanged: (Float) -> Unit) {
     ) {
         Card(backgroundColor = Color.DarkGray) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceAround, modifier = Modifier.padding(10.dp)) {
-                Box(modifier = Modifier.padding(10.dp) ) {
+                Box(modifier = Modifier.padding(10.dp)) {
                     Slider(
                         value = sliderValue,
-                        onValueChange = {value ->
+                        onValueChange = { value ->
                             sliderValue = value
-                            onSliderValueChanged(value)},
+                            onSliderValueChanged(value)
+                        },
                         valueRange = 0f..5f, // диапазон значений от 0 до 5
                         steps = 5,
                         colors = SliderDefaults.colors(
@@ -140,8 +155,5 @@ fun InputData(onSliderValueChanged: (Float) -> Unit) {
             }
 
         }
-
     }
-
 }
-
